@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import config from '../config';
+import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
+import config from '../config';
 
 export interface IGetUserAuthInfoRequest extends Request {
   user?: {
@@ -9,18 +10,24 @@ export interface IGetUserAuthInfoRequest extends Request {
     nickname: string | null;
   };
 }
-interface JwtPayload {
+export interface JwtPayload {
   user_id: string;
   email: string | null;
   nickname: string | null;
 }
+
+export const genAccessToken = (user: JwtPayload) => {
+  return jwt.sign(user, config.jwt_secret, { expiresIn: '1m' });
+};
+export const genRefreshToken = () => {
+  return uuidv4();
+};
 
 const authChecker = (
   req: IGetUserAuthInfoRequest,
   res: Response,
   next: NextFunction,
 ) => {
-  // Todo: req.authenticated user info update
   try {
     const accessToken = req.headers.authorization!;
 
@@ -31,6 +38,7 @@ const authChecker = (
       email: email,
       nickname: nickname,
     };
+
     next();
   } catch (err) {
     return res.status(401).json({
