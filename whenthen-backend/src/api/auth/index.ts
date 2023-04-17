@@ -1,8 +1,13 @@
 import express, { Request, Response, Router } from 'express';
-import promisePool from '../../db';
-import crypto from 'crypto';
-import { genAccessToken, genRefreshToken } from '../../middlewares/auth';
+import {
+  genAccessToken,
+  genRefreshToken,
+  hashPassword,
+} from '../../middlewares/auth';
 import HttpStatus from 'http-status-codes';
+import { v4 as uuidv4 } from 'uuid';
+import mysql from 'mysql2';
+import promisePool from '../../db';
 
 const router: Router = express.Router();
 
@@ -10,10 +15,7 @@ router.post('/login', async (req: Request, res: Response) => {
   try {
     const { user_id: userId, user_pw: userPw, autologin } = req.body;
 
-    const userPwHashed = crypto
-      .createHash('sha256') // Todo: apply hash secret: .createHmac('sha256', hashSecret)
-      .update(userPw)
-      .digest('hex');
+    const userPwHashed = hashPassword(userPw);
 
     const [rows, _] = await promisePool.execute(
       `SELECT * from USER WHERE user_id='${userId}' and password_sha256='${userPwHashed}'`,
@@ -105,34 +107,43 @@ router.post('/logout', async (req: Request, res: Response) => {
 
 router.post('/signup', async (req: Request, res: Response) => {
   try {
-    const { user_id: userId, user_pw: userPw } = req.body;
+    const { user_id: userId, user_pw: userPw, nickname, email } = req.body;
 
-    // Todo: validate user password
+    // Validate user id & password & email
+    const idReg = /^[a-z\d]{5,16}$/;
+    const passwordReg = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d!@#$]{8,16}$/;
+    const nicknameReg = /.{1,30}/;
+    const emailReg = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
+    if (
+      idReg.test(userId) &&
+      passwordReg.test(userPw) &&
+      (!nickname || nicknameReg.test(nickname)) &&
+      (!email || emailReg.test(email))
+    ) {
+      const userPwHashed = hashPassword(userPw);
 
-    const userPwHashed = crypto
-      .createHash('sha256') // Todo: apply hash secret: .createHmac('sha256', hashSecret)
-      .update(userPw)
-      .digest('hex');
+      const [rows, _] = await promisePool.execute(
+        `SELECT * from USER WHERE user_id='${userId}'`,
+      );
 
-    const [rows, _] = await promisePool.execute(
-      `SELECT * from USER WHERE user_id='${userId}'`,
-    );
+      if (rows.length) {
+        return res.status(HttpStatus.CONFLICT).json({
+          status: HttpStatus.CONFLICT,
+          message: 'Account already exists',
+        });
+      }
 
-    if (rows.length) {
-      return res.status(HttpStatus.CONFLICT).json({
-        status: HttpStatus.CONFLICT,
-        message: 'Account already exists',
+      await promisePool.execute(
+        `INSERT INTO USER (id, user_id, password_sha256, nickname, email) VALUES ('${uuidv4()}', '${userId}', '${userPwHashed}', ${
+          nickname ? `${mysql.escape(nickname)}` : 'NULL'
+        }, ${email ? `'${email}'` : 'NULL'});`,
+      );
+
+      return res.status(HttpStatus.OK).json({
+        status: HttpStatus.OK,
+        message: 'signup success',
       });
     }
-
-    await promisePool.execute(
-      `INSERT INTO USER (id, user_id, email, password_sha256) VALUES (MID(UUID(),1,36), '${userId}', '', '${userPwHashed}');`,
-    );
-
-    return res.status(HttpStatus.OK).json({
-      status: HttpStatus.OK,
-      message: 'signup success',
-    });
   } catch (err) {}
 
   return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({

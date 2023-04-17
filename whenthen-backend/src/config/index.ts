@@ -16,6 +16,7 @@ export default {
   },
   // jwt secret
   jwt_secret: process.env.JWT_SECRET as string,
+  pw_salt: process.env.PW_SALT as string,
   mysql_config: {
     HOST: process.env.MYSQL_HOST as string,
     USER: process.env.MYSQL_USER as string,

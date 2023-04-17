@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import config from '../config';
 import HttpStatus from 'http-status-codes';
 
@@ -22,6 +23,12 @@ export const genAccessToken = (user: JwtPayload) => {
 };
 export const genRefreshToken = () => {
   return uuidv4();
+};
+export const hashPassword = (passwd: string) => {
+  return crypto
+    .createHmac('sha256', config.pw_salt)
+    .update(passwd)
+    .digest('hex');
 };
 
 const authChecker = (
