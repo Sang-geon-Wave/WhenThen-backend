@@ -2,6 +2,7 @@ import express, { Request, Response, Router } from 'express';
 import promisePool from '../../db';
 import crypto from 'crypto';
 import { genAccessToken, genRefreshToken } from '../../middlewares/auth';
+import HttpStatus from 'http-status-codes';
 
 const router: Router = express.Router();
 
@@ -30,7 +31,7 @@ router.post('/login', async (req: Request, res: Response) => {
       // Generate refresh token & store it in DB and cookie
       const refreshToken = genRefreshToken();
       await promisePool.execute(
-        `UPDATE USER SET refresh_token='${refreshToken}' WHERE user_id='usr';`,
+        `UPDATE USER SET refresh_token='${refreshToken}' WHERE user_id='${userId}';`,
       );
       res.cookie('refresh_token', refreshToken, {
         httpOnly: true,
@@ -41,16 +42,16 @@ router.post('/login', async (req: Request, res: Response) => {
           : {}),
       });
 
-      return res.status(200).json({
-        status: 200,
+      return res.status(HttpStatus.OK).json({
+        status: HttpStatus.OK,
         message: 'login success',
         access_token: accessToken,
       });
     }
   } catch (err) {}
 
-  return res.status(401).json({
-    status: 401,
+  return res.status(HttpStatus.UNAUTHORIZED).json({
+    status: HttpStatus.UNAUTHORIZED,
     message: 'login fail',
   });
 });
@@ -80,8 +81,8 @@ router.post('/refresh', async (req: Request, res: Response) => {
     }
   } catch (err) {}
 
-  return res.status(401).json({
-    status: 401,
+  return res.status(HttpStatus.UNAUTHORIZED).json({
+    status: HttpStatus.UNAUTHORIZED,
     message: 'invalid refresh token',
   });
 });
@@ -96,8 +97,8 @@ router.post('/logout', async (req: Request, res: Response) => {
     res.clearCookie('refresh_token');
   } catch (err) {}
 
-  return res.status(200).json({
-    status: 200,
+  return res.status(HttpStatus.OK).json({
+    status: HttpStatus.OK,
     message: 'logout success',
   });
 });
@@ -105,6 +106,8 @@ router.post('/logout', async (req: Request, res: Response) => {
 router.post('/signup', async (req: Request, res: Response) => {
   try {
     const { user_id: userId, user_pw: userPw } = req.body;
+
+    // Todo: validate user password
 
     const userPwHashed = crypto
       .createHash('sha256') // Todo: apply hash secret: .createHmac('sha256', hashSecret)
@@ -116,8 +119,8 @@ router.post('/signup', async (req: Request, res: Response) => {
     );
 
     if (rows.length) {
-      return res.status(409).json({
-        status: 409,
+      return res.status(HttpStatus.CONFLICT).json({
+        status: HttpStatus.CONFLICT,
         message: 'Account already exists',
       });
     }
@@ -126,14 +129,14 @@ router.post('/signup', async (req: Request, res: Response) => {
       `INSERT INTO USER (id, user_id, email, password_sha256) VALUES (MID(UUID(),1,36), '${userId}', '', '${userPwHashed}');`,
     );
 
-    return res.status(200).json({
-      status: 200,
+    return res.status(HttpStatus.OK).json({
+      status: HttpStatus.OK,
       message: 'signup success',
     });
   } catch (err) {}
 
-  return res.status(500).json({
-    status: 500,
+  return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
     message: 'signup fail',
   });
 });
