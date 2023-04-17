@@ -75,8 +75,8 @@ router.post('/refresh', async (req: Request, res: Response) => {
         nickname: nickname,
       });
 
-      return res.status(200).json({
-        status: 200,
+      return res.status(HttpStatus.OK).json({
+        status: HttpStatus.OK,
         message: 'refresh success',
         access_token: accessToken,
       });
