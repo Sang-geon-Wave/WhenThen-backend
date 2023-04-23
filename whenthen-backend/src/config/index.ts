@@ -16,6 +16,7 @@ export default {
   },
   // jwt secret
   jwt_secret: process.env.JWT_SECRET as string,
+  pw_salt: process.env.PW_SALT as string,
   mysql_config: {
     HOST: process.env.MYSQL_HOST as string,
     USER: process.env.MYSQL_USER as string,
@@ -23,10 +24,10 @@ export default {
     dialect: 'mysql',
     DB: process.env.MYSQL_DATABASE as string,
     pool: {
-      max: 5,
-      min: 0,
-      acquire: 30000,
-      idle: 10000,
+      waitForConnections: true,
+      connectionLimit: 5,
+      queueLimit: 0,
+      idleTimeout: 10000,
     },
     logging: process.env.MYSQL_LOGGING,
   },
