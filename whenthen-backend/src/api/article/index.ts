@@ -21,28 +21,26 @@ router.get(
 
     if (rows.length) {
       for (let i = 0; i < rows.length; i++) {
-        if (req.body.id == rows[i].user_id) {
-          const {
-            title,
-            thumbnail,
-            detail,
-            url,
-            place,
-            start_datetime,
-            end_datetime,
-          } = rows[i];
+        const {
+          title,
+          thumbnail,
+          detail,
+          url,
+          place,
+          start_datetime,
+          end_datetime,
+        } = rows[i];
 
-          const articleObj = {
-            title: title,
-            thumbnail: thumbnail,
-            detail: detail,
-            url: url,
-            place: place,
-            start_datetime: start_datetime,
-            end_datetime: end_datetime,
-          };
-          articleInfo.push(articleObj);
-        }
+        const articleObj = {
+          title: title,
+          thumbnail: thumbnail,
+          detail: detail,
+          url: url,
+          place: place,
+          start_datetime: start_datetime,
+          end_datetime: end_datetime,
+        };
+        articleInfo.push(articleObj);
       }
     }
 
@@ -73,7 +71,7 @@ router.get('/all', authUnprotected, async (req: Request, res: Response) => {
 
       const articleObj = {
         title: title,
-        thumbnail: thumbnail,
+        //thumbnail: thumbnail,
         detail: detail,
         url: url,
         place: place,
