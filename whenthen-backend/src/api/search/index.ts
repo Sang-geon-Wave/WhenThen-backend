@@ -22,7 +22,7 @@ export interface ISearchData {
 
 router.get(
   '/',
-  authUnprotected,
+  authProtected,
   async (req: IGetUserAuthInfoRequest, res: Response) => {
     try {
       const query_per_page = 10;
