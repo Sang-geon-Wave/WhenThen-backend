@@ -22,9 +22,13 @@ export interface ISearchData {
 
 router.get(
   '/',
-  authProtected,
+  authUnprotected,
   async (req: IGetUserAuthInfoRequest, res: Response) => {
     try {
+      const query_per_page = 10;
+      let page: number = 1;
+      if (req.query.page) page = parseInt(req.query.page as string);
+      if (page <= 0) throw new Error('page cannot be negative or zero!');
       if (
         req.query.type == 'detail' ||
         req.query.type == 'title' ||
@@ -37,7 +41,9 @@ router.get(
             `${req.query.type} does exist, but value doesn't exist.`,
           );
         const [rows, _] = await promisePool.execute(
-          `SELECT * FROM ARTICLE WHERE ${req.query.type} LIKE '%${req.query.value}%' LIMIT 1000`,
+          `SELECT * FROM ARTICLE WHERE ${req.query.type} LIKE '%${
+            req.query.value
+          }%' LIMIT ${query_per_page} OFFSET ${(page - 1) * query_per_page}`,
         );
 
         const data: ISearchData[] = [];
@@ -59,6 +65,7 @@ router.get(
 
         return res.status(HttpStatus.OK).json({
           status: HttpStatus.OK,
+          page: page,
           data: data,
         });
       }
