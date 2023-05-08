@@ -30,7 +30,9 @@ router.get(
       if (req.query.page) page = parseInt(req.query.page as string);
       if (page <= 0) throw new Error('page cannot be negative or zero!');
       if (
+        req.query.type == 'title' ||
         req.query.type == 'detail' ||
+        req.query.type == 'url' ||
         req.query.type == 'title' ||
         req.query.type == 'start_datetime' ||
         req.query.type == 'end_datetime' ||
