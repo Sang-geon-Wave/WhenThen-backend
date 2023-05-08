@@ -33,7 +33,6 @@ router.get(
         req.query.type == 'title' ||
         req.query.type == 'detail' ||
         req.query.type == 'url' ||
-        req.query.type == 'title' ||
         req.query.type == 'start_datetime' ||
         req.query.type == 'end_datetime' ||
         req.query.type == 'place'
