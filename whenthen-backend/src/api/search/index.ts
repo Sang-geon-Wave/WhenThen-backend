@@ -25,52 +25,48 @@ router.get(
   authProtected,
   async (req: IGetUserAuthInfoRequest, res: Response) => {
     try {
-      const query_per_page = 10;
-      let page: number = 1;
-      if (req.query.page) page = parseInt(req.query.page as string);
+      const resultsPerPage = 10;
+      let page: number = parseInt(req.query.page as string) || 1;
       if (page <= 0) throw new Error('page cannot be negative or zero!');
-      if (
-        req.query.type == 'title' ||
-        req.query.type == 'detail' ||
-        req.query.type == 'url' ||
-        req.query.type == 'start_datetime' ||
-        req.query.type == 'end_datetime' ||
-        req.query.type == 'place'
-      ) {
-        if (!req.query.value)
-          throw new Error(
-            `${req.query.type} does exist, but value doesn't exist.`,
-          );
-        const [rows, _] = await promisePool.execute(
-          `SELECT * FROM ARTICLE WHERE ${req.query.type} LIKE '%${
-            req.query.value
-          }%' LIMIT ${query_per_page} OFFSET ${(page - 1) * query_per_page}`,
+
+      const validTypes = [
+        'detail',
+        'title',
+        'url',
+        'start_datetime',
+        'end_datetime',
+        'place',
+      ];
+
+      if (!validTypes.includes(req.query.type as string)) {
+        throw new Error('Search type is invalid.');
+      }
+
+      if (!req.query.value)
+        throw new Error(
+          `${req.query.type} does exist, but value doesn't exist.`,
         );
 
-        const data: ISearchData[] = [];
-        if (rows.length) {
-          rows.forEach((row: any) => {
-            const searchData: ISearchData = {
-              title: row.title,
-              thumbnail: row.thumbnail,
-              detail: row.detail,
-              url: row.url,
-              place: row.place,
-              start_datetime: row.start_datetime,
-              end_datetime: row.end_datetime,
-              user_id: row.user_id,
-            };
-            data.push(searchData);
-          });
-        }
+      const offset = (page - 1) * resultsPerPage;
+      const query = `SELECT * FROM ARTICLE WHERE ${req.query.type} LIKE '%${req.query.value}%' LIMIT ${resultsPerPage} OFFSET ${offset}`;
+      const [rows, _] = await promisePool.execute(query);
 
-        return res.status(HttpStatus.OK).json({
-          status: HttpStatus.OK,
-          page: page,
-          data: data,
-        });
-      }
-      throw new Error('Search type is invalid.');
+      const data: ISearchData[] = rows.map((row: any) => ({
+        title: row.title,
+        thumbnail: row.thumbnail,
+        detail: row.detail,
+        url: row.url,
+        place: row.place,
+        start_datetime: row.start_datetime,
+        end_datetime: row.end_datetime,
+        user_id: row.user_id,
+      }));
+
+      return res.status(HttpStatus.OK).json({
+        status: HttpStatus.OK,
+        page: page,
+        data: data,
+      });
     } catch (err: any) {
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         status: HttpStatus.INTERNAL_SERVER_ERROR,
