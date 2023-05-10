@@ -48,12 +48,14 @@ router.get(
           `${req.query.type} does exist, but value doesn't exist.`,
         );
 
+      const type = mysql.escapeId(req.query.type);
+      const value = mysql.escape('%' + req.query.value + '%');
+
       const offset = (page - 1) * resultsPerPage;
-      const query = `SELECT * FROM ARTICLE WHERE ${mysql.escape(
-        req.query.type,
-      )} LIKE '%${mysql.escape(req.query.value)}%' LIMIT ${mysql.escape(
+      const query = `SELECT * FROM ARTICLE WHERE ${type} LIKE ${value}  LIMIT ${mysql.escape(
         resultsPerPage,
       )} OFFSET ${mysql.escape(offset)}`;
+      console.log(query);
       const [rows, _] = await promisePool.execute(query);
 
       const data: ISearchData[] = rows.map((row: any) => ({
