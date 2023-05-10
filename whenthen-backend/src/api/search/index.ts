@@ -6,6 +6,7 @@ import {
 } from '../../middlewares/auth';
 import HttpStatus from 'http-status-codes';
 import promisePool from '../../db';
+import mysql from 'mysql2';
 
 const router: Router = express.Router();
 
@@ -48,7 +49,11 @@ router.get(
         );
 
       const offset = (page - 1) * resultsPerPage;
-      const query = `SELECT * FROM ARTICLE WHERE ${req.query.type} LIKE '%${req.query.value}%' LIMIT ${resultsPerPage} OFFSET ${offset}`;
+      const query = `SELECT * FROM ARTICLE WHERE ${mysql.escape(
+        req.query.type,
+      )} LIKE '%${mysql.escape(req.query.value)}%' LIMIT ${mysql.escape(
+        resultsPerPage,
+      )} OFFSET ${mysql.escape(offset)}`;
       const [rows, _] = await promisePool.execute(query);
 
       const data: ISearchData[] = rows.map((row: any) => ({
