@@ -13,36 +13,28 @@ router.get(
   '/like',
   authProtected,
   async (req: IGetUserAuthInfoRequest, res: Response) => {
-    const [rows, fields] = await promisePool.execute(
-      'SELECT * FROM SUBSCRIBE INNER JOIN ARTICLE ON SUBSCRIBE.article_id = ARTICLE.id',
-    );
+    const [rows, fields] = await promisePool.execute(`
+      SELECT title, thumbnail, detail, url, place, start_datetime, end_datetime, ROW_NUMBER ( ) OVER (ORDER BY DATE(start_datetime)) AS ROW_NUM
+      FROM SUBSCRIBE 
+        INNER JOIN ARTICLE ON SUBSCRIBE.article_id = ARTICLE.id 
+        INNER JOIN USER ON SUBSCRIBE.user_id = USER.id 
+      WHERE USER.user_id IN ('${req.user?.userId}');
+      `);
 
     const articleInfo: any[] = [];
 
-    if (rows.length) {
-      for (let i = 0; i < rows.length; i++) {
-        const {
-          title,
-          thumbnail,
-          detail,
-          url,
-          place,
-          start_datetime,
-          end_datetime,
-        } = rows[i];
-
-        const articleObj = {
-          title: title,
-          thumbnail: thumbnail,
-          detail: detail,
-          url: url,
-          place: place,
-          start_datetime: start_datetime,
-          end_datetime: end_datetime,
-        };
-        articleInfo.push(articleObj);
-      }
-    }
+    rows.forEach((row: any) => {
+      const articleObj = {
+        title: row.title,
+        thumbnail: row.thumbnail,
+        detail: row.detail,
+        url: row.url,
+        place: row.place,
+        start_date: row.start_datetime,
+        end_date: row.end_datetime,
+      };
+      articleInfo.push(articleObj);
+    });
 
     return res.status(HttpStatus.OK).json({
       status: HttpStatus.OK,
@@ -53,34 +45,25 @@ router.get(
 );
 
 router.get('/all', authUnprotected, async (req: Request, res: Response) => {
-  const [rows, fields] = await promisePool.execute('SELECT * from ARTICLE');
+  const [rows, fields] = await promisePool.execute(`
+    SELECT title, thumbnail, detail, url, place, start_datetime, end_datetime, ROW_NUMBER ( ) OVER (ORDER BY DATE(start_datetime)) AS ROW_NUM
+    FROM ARTICLE;
+    `);
 
   const articleInfo: any[] = [];
 
-  if (rows.length) {
-    for (let i = 0; i < rows.length; i++) {
-      const {
-        title,
-        thumbnail,
-        detail,
-        url,
-        place,
-        start_datetime,
-        end_datetime,
-      } = rows[i];
-
-      const articleObj = {
-        title: title,
-        //thumbnail: thumbnail,
-        detail: detail,
-        url: url,
-        place: place,
-        start_datetime: start_datetime,
-        end_datetime: end_datetime,
-      };
-      articleInfo.push(articleObj);
-    }
-  }
+  rows.forEach((row: any) => {
+    const articleObj = {
+      title: row.title,
+      thumbnail: row.thumbnail,
+      detail: row.detail,
+      url: row.url,
+      place: row.place,
+      start_date: row.start_datetime,
+      end_date: row.end_datetime,
+    };
+    articleInfo.push(articleObj);
+  });
 
   return res.status(HttpStatus.OK).json({
     status: HttpStatus.OK,
